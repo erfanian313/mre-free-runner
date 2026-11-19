@@ -1,4 +1,4 @@
-# Reliability gate: validate private tests, reject malformed market candles and invalid signal geometry before every live scan.
+# Reliability gate: run private regression tests and validate OHLC integrity plus signal geometry before every live scan.
 name: M.R.E Private Signal Runner
 
 on:
