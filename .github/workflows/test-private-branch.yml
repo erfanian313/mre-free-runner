@@ -1,4 +1,4 @@
-name: Temporary private branch regression tests
+name: Temporary private branch regression tests - coalescing GREEN
 
 on:
   push:
