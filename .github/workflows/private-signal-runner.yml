@@ -1,4 +1,4 @@
-# The public runner validates the private application before every live scan and checks Persian message formatting.
+# The public runner validates all private application tests before every live scan.
 name: M.R.E Private Signal Runner
 
 on:
