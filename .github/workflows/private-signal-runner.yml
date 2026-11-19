@@ -39,7 +39,15 @@ jobs:
 
       - name: Install runtime dependencies
         working-directory: private-app
-        run: python -m pip install --disable-pip-version-check -r requirements.txt
+        run: |
+          python -m pip install --disable-pip-version-check -r requirements.txt
+          python -m pip install --disable-pip-version-check pytest
+
+      - name: Run private application tests
+        working-directory: private-app
+        env:
+          PYTHONPATH: .
+        run: python -m pytest -q
 
       - name: Run private signal and membership monitor
         working-directory: private-app
