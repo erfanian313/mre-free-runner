@@ -2,13 +2,13 @@
 name: M.R.E Private Signal Runner
 
 on:
+  repository_dispatch:
+    types: [scheduled_signal_check]
   workflow_dispatch:
   push:
     branches: [main]
     paths:
       - ".github/workflows/private-signal-runner.yml"
-  schedule:
-    - cron: '*/5 * * * *'
 
 permissions:
   contents: read
