@@ -2,6 +2,10 @@ name: M.R.E Private Signal Runner
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/private-signal-runner.yml"
   schedule:
     - cron: '*/5 * * * *'
 
@@ -48,11 +52,62 @@ jobs:
           set +e
           python main.py > "$RUNNER_TEMP/private-monitor.log" 2>&1
           result=$?
+          python - "$RUNNER_TEMP/private-monitor.log" "$TELEGRAM_BOT_TOKEN" <<'PY'
+          import re, sys
+          from collections import Counter
+
+          path, token = sys.argv[1], sys.argv[2]
+          with open(path, encoding="utf-8", errors="replace") as stream:
+              lines = stream.readlines()
+
+          sources = Counter()
+          candidates = Counter()
+          no_data = []
+          processing_errors = []
+          live_errors = []
+          telegram_errors = 0
+          queued = 0
+          completed = False
+
+          for raw in lines:
+              line = raw.replace(token, "[REDACTED]") if token else raw
+              match = re.search(r"market data source=(BiQuote|Yahoo fallback|Dukascopy fallback)", line)
+              if match:
+                  sources[match.group(1)] += 1
+              match = re.search(r"Signal candidate: (SMC|ICT|KN \\| EMA) ([A-Z]{6})", line)
+              if match:
+                  candidates[match.group(1)] += 1
+              match = re.search(r"^([A-Z]{6}): no candles from any free source", line)
+              if match:
+                  no_data.append(match.group(1))
+              match = re.search(r"Error processing ([A-Z]{6}):", line)
+              if match:
+                  processing_errors.append(match.group(1))
+              match = re.search(r"Priority live monitoring error for ([A-Z]{6}):", line)
+              if match:
+                  live_errors.append(match.group(1))
+              if "Telegram update polling error:" in line:
+                  telegram_errors += 1
+              if "Telegram notification remains queued:" in line:
+                  queued += 1
+              if "Signal and membership monitoring completed." in line:
+                  completed = True
+
+          print("=== M.R.E monitor health summary ===")
+          print(f"Market data source successes: {dict(sources)}")
+          print(f"Signal candidates detected: {dict(candidates)}")
+          print(f"Symbols with no usable market data: {len(set(no_data))} {sorted(set(no_data))}")
+          print(f"Symbol processing errors: {len(processing_errors)} {sorted(set(processing_errors))}")
+          print(f"Live-position monitoring errors: {len(live_errors)} {sorted(set(live_errors))}")
+          print(f"Telegram polling errors: {telegram_errors}")
+          print(f"Telegram notifications still queued: {queued}")
+          print(f"Monitor reached normal completion: {completed}")
+          PY
           if [ "$result" -ne 0 ]; then
-            echo "::error::Private monitor failed. Detailed output is suppressed to protect private user and trading data."
+            echo "::error::Private monitor failed. See the sanitized health summary above."
             exit "$result"
           fi
-          echo "Private monitor completed. Detailed output is suppressed."
+          echo "Private monitor completed."
 
       - name: Persist private application state
         working-directory: private-app
