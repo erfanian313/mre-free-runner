@@ -10,7 +10,7 @@ on:
     paths:
       - ".github/workflows/private-signal-runner.yml"
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '3/5 * * * *'
 
 permissions:
   contents: read
