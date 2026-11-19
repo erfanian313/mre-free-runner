@@ -1,0 +1,31 @@
+name: Temporary private branch regression tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-private-branch.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: erfanian313/kn-telegram-signals
+          ref: fix/prevent-stale-burst-telegram-alerts-20261119
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: private-app
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        working-directory: private-app
+        run: python -m pip install pytest pandas numpy
+      - name: Run regression tests (expected red before fix)
+        working-directory: private-app
+        run: python -m pytest -q tests/test_notification_outbox.py
