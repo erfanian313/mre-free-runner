@@ -156,6 +156,7 @@ jobs:
             echo "Push race detected; retrying (${attempt}/3)."
           done
           echo "::error::Could not persist private state after three attempts."
+          exit 1
 
       - name: Queue next five-minute scan
         if: always() && (github.event_name != 'push' || contains(github.event.head_commit.message, '[run-monitor]'))
@@ -179,4 +180,3 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"event_type":"scheduled_signal_check","client_payload":{"source":"github-self-chain"}}'
           echo "Next five-minute signal scan successfully queued."
-          exit 1
