@@ -16,7 +16,7 @@ on:
     - cron: '*/5 * * * *'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: mre-private-signal-runner
@@ -27,6 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      - name: Record workflow start time
+        id: clock
+        shell: bash
+        run: echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout private signal application
         uses: actions/checkout@v4
         with:
@@ -151,4 +156,27 @@ jobs:
             echo "Push race detected; retrying (${attempt}/3)."
           done
           echo "::error::Could not persist private state after three attempts."
+
+      - name: Queue next five-minute scan
+        if: always() && (github.event_name != 'push' || contains(github.event.head_commit.message, '[run-monitor]'))
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STARTED_AT: ${{ steps.clock.outputs.started_at }}
+        run: |
+          set -euo pipefail
+          elapsed=$(( $(date +%s) - STARTED_AT ))
+          remaining=$((300 - elapsed))
+          if [ "$remaining" -gt 0 ]; then
+            echo "Waiting $remaining seconds to preserve a five-minute scan cadence."
+            sleep "$remaining"
+          fi
+          curl --fail-with-body --silent --show-error \
+            -X POST "https://api.github.com/repos/$GITHUB_REPOSITORY/dispatches" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            -d '{"event_type":"scheduled_signal_check","client_payload":{"source":"github-self-chain"}}'
+          echo "Next five-minute signal scan successfully queued."
           exit 1
