@@ -74,7 +74,7 @@ jobs:
               match = re.search(r"market data source=(BiQuote|Yahoo fallback|Dukascopy fallback)", line)
               if match:
                   sources[match.group(1)] += 1
-              match = re.search(r"Signal candidate: (SMC|ICT|KN \\| EMA) ([A-Z]{6})", line)
+              match = re.search(r"Signal candidate: (SMC|ICT|KN \| EMA) ([A-Z]{6})", line)
               if match:
                   candidates[match.group(1)] += 1
               match = re.search(r"^([A-Z]{6}): no candles from any free source", line)
