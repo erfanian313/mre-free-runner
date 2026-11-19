@@ -1,6 +1,7 @@
 # Reliability gate: run regression tests and reject malformed market data or invalid trade geometry before live scans.
 # Trigger a focused regression check for the M1 TP/SL notification catch-up window (fix applied).
 # Verify the revised five-minute catch-up boundary and stale-event suppression tests.
+# Verify per-feed-interval Telegram outbox expiration windows.
 name: M.R.E Private Signal Runner
 
 on:
